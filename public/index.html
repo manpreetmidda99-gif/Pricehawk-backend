@@ -69,6 +69,59 @@
       gap: 20px;
       border-bottom: 1px solid var(--line);
     }
+    .topbar-right { display: flex; align-items: center; gap: 20px; }
+    .currency-picker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .currency-picker select {
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+    .popular-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .popular-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+      font: inherit;
+      color: var(--ink);
+    }
+    .popular-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-sm); }
+    .popular-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 12px;
+      background: var(--surface-2);
+    }
+    .popular-card span { font-weight: 700; font-size: 14px; }
+    @media (max-width: 640px) {
+      .popular-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .popular-card { padding: 12px 10px; }
+    }
     .nav { display: flex; align-items: center; gap: 24px; }
     .nav a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; }
     .nav a:hover, .nav a:focus-visible { color: var(--ink); }
@@ -296,7 +349,9 @@
     }
     @media (max-width: 640px) {
       .wrap { width: min(100% - 28px, 1160px); }
-      .topbar { min-height: 58px; }
+      .topbar { min-height: 58px; gap: 12px; }
+      .topbar-right { gap: 12px; }
+      .currency-picker { padding: 5px 8px; font-size: 13px; }
       .menu-button { display: block; }
       .nav {
         display: none;
@@ -362,13 +417,27 @@
     <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open navigation">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
-    <nav class="nav" id="site-nav" aria-label="Main navigation">
-      <a href="#search">Search</a>
-      <a href="#how">How it works</a>
-      <a href="#coverage">What it checks</a>
-      <a href="#features">Features</a>
-      <a href="#faq">FAQ</a>
-    </nav>
+    <div class="topbar-right">
+      <label class="currency-picker" aria-label="Display currency">
+        <span>💱</span>
+        <select id="currency-select" aria-label="Choose currency">
+          <option value="USD">USD $</option>
+          <option value="CAD">CAD $</option>
+          <option value="EUR">EUR €</option>
+          <option value="GBP">GBP £</option>
+          <option value="INR">INR ₹</option>
+          <option value="AUD">AUD $</option>
+          <option value="JPY">JPY ¥</option>
+          <option value="MXN">MXN $</option>
+        </select>
+      </label>
+      <nav class="nav" id="site-nav" aria-label="Main navigation">
+        <a href="#search">Search</a>
+        <a href="#popular">Popular</a>
+        <a href="#how">How it works</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+    </div>
   </header>
 
   <main>
@@ -455,6 +524,32 @@
         </div>
       </div>
     </div>
+
+    <section class="wrap" id="popular" style="padding-top:48px;padding-bottom:24px">
+      <div class="section-heading" style="margin-bottom:24px">
+        <p class="eyebrow">Trending now</p>
+        <h2>Popular products</h2>
+        <p>Tap any product to instantly compare prices across stores.</p>
+      </div>
+      <div class="popular-grid">
+        <button class="popular-card" data-query="Sony WH-1000XM5 wireless headphones">
+          <img src="images/headphones.webp" alt="Wireless headphones" loading="lazy" />
+          <span>Headphones</span>
+        </button>
+        <button class="popular-card" data-query="iPhone 15 smartphone">
+          <img src="images/smartphone.webp" alt="Smartphone" loading="lazy" />
+          <span>Smartphones</span>
+        </button>
+        <button class="popular-card" data-query="MacBook Air laptop">
+          <img src="images/laptop.webp" alt="Laptop" loading="lazy" />
+          <span>Laptops</span>
+        </button>
+        <button class="popular-card" data-query="Apple Watch smartwatch">
+          <img src="images/smartwatch.webp" alt="Smartwatch" loading="lazy" />
+          <span>Smartwatches</span>
+        </button>
+      </div>
+    </section>
 
     <div class="signal-strip">
       <div class="wrap signals">
@@ -645,6 +740,13 @@
         var amount = Number(value);
         var code = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : '';
         if (!Number.isFinite(amount)) return 'Price unavailable' + (code ? ' ' + code : '');
+        // Convert to user's selected currency if functions are available
+        try {
+          if (typeof convertPrice === 'function' && typeof fmtPrice === 'function' && code) {
+            var converted = convertPrice(amount, code);
+            return fmtPrice(converted.amount, converted.currency);
+          }
+        } catch (e) { /* fall through to default formatting */ }
         var formatted;
         try {
           formatted = code ? new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(amount) : amount.toFixed(2);
@@ -754,6 +856,70 @@
       }
 
       // SerpAPI key management (BYOK - stored in localStorage only)
+      // Currency management
+      var CURRENCY_STORAGE = 'pricehawk_currency';
+      var exchangeRates = { USD: 1 }; // base rates, fetched live below
+      var currencySymbols = { USD: '$', CAD: '$', EUR: '€', GBP: '£', INR: '₹', AUD: '$', JPY: '¥', MXN: '$' };
+      var lastSearchResults = null;
+      var lastTrackedData = null;
+      function getCurrency() {
+        try { return localStorage.getItem(CURRENCY_STORAGE) || 'USD'; }
+        catch (e) { return 'USD'; }
+      }
+      function setCurrency(code) {
+        try { localStorage.setItem(CURRENCY_STORAGE, code); } catch (e) {}
+      }
+      // Fetch live exchange rates (free, no key needed)
+      fetch('https://open.er-api.com/v6/latest/USD').then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.rates) exchangeRates = data.rates;
+        }).catch(function () {
+          // Fallback static rates if API fails
+          exchangeRates = { USD: 1, CAD: 1.36, EUR: 0.92, GBP: 0.79, INR: 83.5, AUD: 1.52, JPY: 149.8, MXN: 17.1 };
+        });
+      function convertPrice(price, fromCurrency) {
+        var target = getCurrency();
+        if (!fromCurrency || fromCurrency === target) return { amount: price, currency: target };
+        var fromRate = exchangeRates[fromCurrency] || 1;
+        var toRate = exchangeRates[target] || 1;
+        var usdAmount = price / fromRate;
+        return { amount: usdAmount * toRate, currency: target };
+      }
+      function fmtPrice(amount, currency) {
+        var sym = currencySymbols[currency] || currency + ' ';
+        // JPY has no decimals
+        var decimals = currency === 'JPY' ? 0 : 2;
+        return sym + amount.toFixed(decimals);
+      }
+      // Init currency selector
+      var currencySelect = document.getElementById('currency-select');
+      if (currencySelect) {
+        currencySelect.value = getCurrency();
+        currencySelect.addEventListener('change', function () {
+          setCurrency(currencySelect.value);
+          // Re-render current results with new currency
+          if (lastSearchResults) renderOffers(lastSearchResults.data, lastSearchResults.endpoint);
+          if (lastTrackedData) renderTracked(lastTrackedData);
+        });
+      }
+
+      // Popular product cards -> trigger search
+      document.querySelectorAll('.popular-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+          var query = card.getAttribute('data-query');
+          // Switch to search tab
+          document.getElementById('name-tab').click();
+          var input = document.getElementById('product-query');
+          input.value = query;
+          // Scroll to search
+          document.getElementById('search').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Submit search
+          setTimeout(function () {
+            document.getElementById('product-search').dispatchEvent(new Event('submit', { cancelable: true }));
+          }, 300);
+        });
+      });
+
       var SERPAPI_KEY_STORAGE = 'pricehawk_serpapi_key';
       function getSerpApiKey() {
         try { return localStorage.getItem(SERPAPI_KEY_STORAGE) || ''; }
@@ -880,6 +1046,7 @@
           if (!data || !Array.isArray(data.offers)) {
             throw { isApiError: true, message: 'PriceHawk received an incomplete response. Please try again.' };
           }
+          lastSearchResults = { data: data, endpoint: endpoint };
           renderOffers(data, endpoint);
         } catch (error) {
           var message = error && error.isApiError ? error.message : 'The PriceHawk backend is not connected yet. Please try again after the public service is deployed.';
@@ -905,7 +1072,8 @@
         try {
           var res = await fetch(PRICEHAWK_API_BASE + '/api/track');
           var data = await res.json();
-          renderTracked(data.products || []);
+          lastTrackedData = data.products || [];
+          renderTracked(lastTrackedData);
           resultStatus.textContent = 'Ready';
         } catch (e) {
           setFeedback('Could not load tracked prices.', 'error');
