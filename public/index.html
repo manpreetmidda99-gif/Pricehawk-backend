@@ -383,9 +383,11 @@
         <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="window-title">Product search</span></div>
         <div class="product-content">
           <div class="search-tabs" role="tablist" aria-label="Search method">
-            <button class="search-tab" id="track-tab" type="button" role="tab" aria-selected="true" aria-controls="product-search" data-mode="track">Track prices</button>
+            <button class="search-tab" id="name-tab" type="button" role="tab" aria-selected="true" aria-controls="product-search" data-mode="name">Product name</button>
+            <button class="search-tab" id="track-tab" type="button" role="tab" aria-selected="false" aria-controls="product-search" data-mode="track">Track prices</button>
+            <button class="search-tab" id="settings-tab" type="button" role="tab" aria-selected="false" data-mode="settings">⚙️ Settings</button>
           </div>
-          <form id="product-search" novalidate hidden>
+          <form id="product-search" novalidate>
             <label class="search-field" for="product-query">
               <span class="search-value">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -393,6 +395,7 @@
               </span>
               <button class="search-action" type="submit">Search</button>
             </label>
+            <p class="search-note" id="serpapi-note" style="font-size:13px;color:var(--muted);margin:8px 0 0">💡 For automatic prices, add your free SerpAPI key in <a href="#" id="goto-settings" style="color:var(--accent)">Settings</a> (250 free searches/month).</p>
           </form>
           <!-- Manual price tracker: user enters prices they see on retailer sites -->
           <form id="price-tracker" novalidate>
@@ -405,6 +408,22 @@
               <label class="track-field"><span>Target price (optional)</span><input id="track-target" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Alert me below…" /></label>
             </div>
             <button class="search-action track-submit" type="submit">Add price</button>
+          </form>
+          <!-- Settings: BYOK SerpAPI key -->
+          <form id="api-settings" novalidate hidden>
+            <p style="font-size:14px;color:var(--muted);margin:0 0 12px">PriceHawk uses your own free SerpAPI key for automatic prices. Each key gets <strong>250 free searches/month</strong> — no credit card needed.</p>
+            <div class="track-grid">
+              <label>SerpAPI Key
+                <input type="password" id="serpapi-key-input" placeholder="Paste your SerpAPI key" autocomplete="off" />
+              </label>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="search-action" type="submit">Save key</button>
+              <button class="search-action" type="button" id="clear-key-btn" style="background:var(--muted)">Remove</button>
+              <a href="https://serpapi.com" target="_blank" rel="noopener" style="align-self:center;font-size:14px;color:var(--accent)">Get a free key →</a>
+            </div>
+            <p id="key-status" style="font-size:13px;margin:8px 0 0"></p>
+            <p style="font-size:12px;color:var(--muted);margin:12px 0 0">Your key is stored only in this browser (localStorage). It's sent with your searches but never stored on our servers.</p>
           </form>
           <div class="search-note">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -593,7 +612,7 @@
       var resultSummary = document.getElementById('result-summary');
       var resultStatus = document.getElementById('result-status');
       var trackForm = document.getElementById('price-tracker');
-      var searchMode = 'track';
+      var searchMode = 'name';
 
       function setFeedback(message, state) {
         searchFeedback.textContent = message;
@@ -723,6 +742,19 @@
         return message || 'PriceHawk could not complete that search.';
       }
 
+      // SerpAPI key management (BYOK - stored in localStorage only)
+      var SERPAPI_KEY_STORAGE = 'pricehawk_serpapi_key';
+      function getSerpApiKey() {
+        try { return localStorage.getItem(SERPAPI_KEY_STORAGE) || ''; }
+        catch (e) { return ''; }
+      }
+      function setSerpApiKey(key) {
+        try {
+          if (key) localStorage.setItem(SERPAPI_KEY_STORAGE, key);
+          else localStorage.removeItem(SERPAPI_KEY_STORAGE);
+        } catch (e) {}
+      }
+
       searchTabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
           searchMode = tab.getAttribute('data-mode');
@@ -730,10 +762,21 @@
             item.setAttribute('aria-selected', String(item === tab));
           });
           var isTrack = searchMode === 'track';
-          searchForm.hidden = isTrack;
+          var isSettings = searchMode === 'settings';
+          searchForm.hidden = isTrack || isSettings;
           trackForm.hidden = !isTrack;
-          document.querySelector('.search-note').style.display = isTrack ? 'none' : '';
-          if (isTrack) {
+          document.getElementById('api-settings').hidden = !isSettings;
+          document.querySelector('.search-note').style.display = (isTrack || isSettings) ? 'none' : '';
+          // Hide/show the serpapi hint note
+          var serpNote = document.getElementById('serpapi-note');
+          if (serpNote) serpNote.style.display = getSerpApiKey() ? 'none' : '';
+          if (isSettings) {
+            resultTitle.textContent = 'Settings';
+            resultSummary.textContent = 'Your API configuration';
+            resultStatus.textContent = 'Ready';
+            clearResults('');
+            updateKeyStatus();
+          } else if (isTrack) {
             resultTitle.textContent = 'Tracked prices';
             resultSummary.textContent = 'Prices you entered across stores';
             resultStatus.textContent = 'Ready';
@@ -741,13 +784,42 @@
             loadTracked();
           } else {
             searchInput.value = '';
-            searchInput.type = searchMode === 'link' ? 'url' : 'search';
-            searchInput.placeholder = searchMode === 'link' ? 'Paste a retailer product URL' : 'Search by brand, model, or product';
-            searchInput.setAttribute('aria-label', searchMode === 'link' ? 'Retailer product link' : 'Product name');
             searchFeedback.hidden = true;
             searchInput.focus();
           }
         });
+      });
+
+      // Settings form: save/clear SerpAPI key
+      var settingsForm = document.getElementById('api-settings');
+      var keyInput = document.getElementById('serpapi-key-input');
+      var keyStatus = document.getElementById('key-status');
+      function updateKeyStatus() {
+        var hasKey = !!getSerpApiKey();
+        keyStatus.textContent = hasKey ? '✅ API key saved. Automatic search is enabled.' : 'No API key saved. Search will show manual tracking only.';
+        keyStatus.style.color = hasKey ? 'green' : 'var(--muted)';
+        if (hasKey) keyInput.value = '';
+        keyInput.placeholder = hasKey ? '•••••••• (key saved)' : 'Paste your SerpAPI key';
+      }
+      settingsForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var key = keyInput.value.trim();
+        if (!key) {
+          keyStatus.textContent = 'Please paste your SerpAPI key first.';
+          keyStatus.style.color = 'red';
+          return;
+        }
+        setSerpApiKey(key);
+        keyInput.value = '';
+        updateKeyStatus();
+      });
+      document.getElementById('clear-key-btn').addEventListener('click', function () {
+        setSerpApiKey('');
+        updateKeyStatus();
+      });
+      document.getElementById('goto-settings').addEventListener('click', function (e) {
+        e.preventDefault();
+        document.getElementById('settings-tab').click();
       });
 
       searchForm.addEventListener('submit', async function (event) {
@@ -764,8 +836,11 @@
           return;
         }
 
-        var endpoint = searchMode === 'link' ? '/api/compare' : '/api/search';
-        var payload = searchMode === 'link' ? { url: query } : { query: query };
+        var endpoint = '/api/search';
+        var payload = { query: query };
+        // Include user's SerpAPI key for automatic prices (BYOK)
+        var userKey = getSerpApiKey();
+        if (userKey) payload.serpapi_key = userKey;
         searchButton.disabled = true;
         searchButton.textContent = 'Searching…';
         offerList.setAttribute('aria-busy', 'true');
@@ -896,11 +971,9 @@
         }
       });
 
-      // Initialize in track mode: hide search UI, show tracker, load prices.
-      document.querySelector('.search-note').style.display = 'none';
-      resultTitle.textContent = 'Tracked prices';
-      resultSummary.textContent = 'Prices you entered across stores';
-      loadTracked();
+      // Initialize in search mode. Show serpapi hint if no key saved.
+      var serpNote = document.getElementById('serpapi-note');
+      if (serpNote) serpNote.style.display = getSerpApiKey() ? 'none' : '';
     }());
   </script>
 </body>
