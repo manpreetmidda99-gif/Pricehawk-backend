@@ -137,6 +137,20 @@
       background: var(--surface-2);
     }
     .popular-card span { font-weight: 700; font-size: 14px; }
+    .apikey-banner {
+      display: flex;
+      gap: 14px;
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+      border-radius: 14px;
+      background: var(--accent-soft);
+    }
+    .apikey-banner-icon { font-size: 28px; line-height: 1; }
+    .apikey-banner-body strong { font-size: 15px; }
+    .apikey-banner-body p { margin: 6px 0 8px; font-size: 14px; color: var(--muted); }
+    .apikey-banner-body ol { margin: 0; padding-left: 20px; font-size: 14px; display: grid; gap: 4px; }
+    .apikey-banner-body a { color: var(--accent); font-weight: 700; }
     @media (max-width: 640px) {
       .popular-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .popular-card { padding: 12px 10px; }
@@ -499,7 +513,18 @@
               </span>
               <button class="search-action" type="submit">Search</button>
             </label>
-            <p class="search-note" id="serpapi-note" style="font-size:13px;color:var(--muted);margin:8px 0 0">💡 For automatic prices, add your free SerpAPI key in <a href="#" id="goto-settings" style="color:var(--accent)">Settings</a> (250 free searches/month).</p>
+            <div class="apikey-banner" id="serpapi-note">
+              <div class="apikey-banner-icon">🔑</div>
+              <div class="apikey-banner-body">
+                <strong>One quick setup for live prices</strong>
+                <p>PriceHawk needs your <strong>free SerpAPI key</strong> to fetch real-time prices — it takes 60 seconds, no credit card, 250 free searches/month.</p>
+                <ol>
+                  <li>Get your free key at <a href="https://serpapi.com" target="_blank" rel="noopener">serpapi.com</a></li>
+                  <li>Paste it in <a href="#" id="goto-settings">⚙️ Settings</a></li>
+                  <li>Search any product — done!</li>
+                </ol>
+              </div>
+            </div>
           </form>
           <!-- Manual price tracker: user enters prices they see on retailer sites -->
           <form id="price-tracker" novalidate>
@@ -544,7 +569,16 @@
           </div>
           <!-- Settings: BYOK SerpAPI key -->
           <form id="api-settings" novalidate hidden>
-            <p style="font-size:14px;color:var(--muted);margin:0 0 12px">PriceHawk uses your own free SerpAPI key for automatic prices. Each key gets <strong>250 free searches/month</strong> — no credit card needed.</p>
+            <div style="padding:16px;border-radius:14px;background:var(--accent-soft);border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));margin-bottom:16px">
+              <p style="font-size:15px;margin:0 0 8px"><strong>🔑 Why you need this</strong></p>
+              <p style="font-size:14px;color:var(--muted);margin:0 0 8px">PriceHawk is free, but live price data comes from SerpAPI. To keep PriceHawk free forever, <strong>each user brings their own free API key</strong> — it takes 60 seconds:</p>
+              <ol style="font-size:14px;color:var(--muted);margin:0;padding-left:20px;display:grid;gap:4px">
+                <li>Go to <a href="https://serpapi.com" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">serpapi.com</a> and create a free account (no credit card)</li>
+                <li>Copy your API key from the dashboard</li>
+                <li>Paste it below and hit <strong>Save key</strong></li>
+              </ol>
+              <p style="font-size:14px;margin:8px 0 0">✨ You get <strong>250 free searches every month</strong> — plenty for regular deal hunting.</p>
+            </div>
             <div class="track-grid">
               <label>SerpAPI Key
                 <input type="password" id="serpapi-key-input" placeholder="Paste your SerpAPI key" autocomplete="off" />
@@ -556,7 +590,7 @@
               <a href="https://serpapi.com" target="_blank" rel="noopener" style="align-self:center;font-size:14px;color:var(--accent)">Get a free key →</a>
             </div>
             <p id="key-status" style="font-size:13px;margin:8px 0 0"></p>
-            <p style="font-size:12px;color:var(--muted);margin:12px 0 0">Your key is stored only in this browser (localStorage). It's sent with your searches but never stored on our servers.</p>
+            <p style="font-size:12px;color:var(--muted);margin:12px 0 0">🔒 Your key is stored only in this browser (localStorage). It's sent with your searches but never stored on our servers.</p>
           </form>
           <div class="search-note">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -1261,10 +1295,17 @@
           renderOffers(data, endpoint);
         } catch (error) {
           var message = error && error.isApiError ? error.message : 'The PriceHawk backend is not connected yet. Please try again after the public service is deployed.';
+          // If user has no API key, point them at the setup steps
+          if (!getSerpApiKey() && /no offers|empty|unavailable/i.test(message)) {
+            message = '🔑 Add your free SerpAPI key to see live prices — get one at serpapi.com (free, no card), then paste it in ⚙️ Settings. Takes 60 seconds.';
+            resultTitle.textContent = 'API key needed';
+            resultSummary.textContent = 'One quick setup unlocks live prices';
+          } else {
+            resultTitle.textContent = 'Search unavailable';
+            resultSummary.textContent = 'The backend is not connected yet';
+          }
           setFeedback(message, 'error');
           clearResults('No live results are available right now.');
-          resultTitle.textContent = 'Search unavailable';
-          resultSummary.textContent = 'The backend is not connected yet';
           resultStatus.textContent = 'Offline';
         } finally {
           searchButton.disabled = false;
