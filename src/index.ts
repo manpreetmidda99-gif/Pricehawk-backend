@@ -80,12 +80,32 @@ app.route("/api/track", trackRoute());
 // Serve the PriceHawk website (same origin, so no mixed-content issues).
 const here = dirname(fileURLToPath(import.meta.url));
 const indexHtml = join(here, "..", "public", "index.html");
+const imagesDir = join(here, "..", "public", "images");
 app.get("/", async (c) => {
   try {
     const html = await readFile(indexHtml, "utf8");
     return c.html(html);
   } catch {
     return c.json({ error: { code: "not_found", message: "Website not built." } }, 404);
+  }
+});
+
+// Serve product images
+app.get("/images/:file", async (c) => {
+  const file = c.req.param("file");
+  // Only allow safe filenames
+  if (!/^[a-z0-9_-]+\.(webp|png|jpg|jpeg)$/i.test(file)) {
+    return c.json({ error: { code: "not_found", message: "Not found." } }, 404);
+  }
+  try {
+    const data = await readFile(join(imagesDir, file));
+    const ext = file.split(".").pop()?.toLowerCase();
+    const mime = ext === "webp" ? "image/webp" : ext === "png" ? "image/png" : "image/jpeg";
+    return new Response(data as any, {
+      headers: { "Content-Type": mime, "Cache-Control": "public, max-age=86400" },
+    });
+  } catch {
+    return c.json({ error: { code: "not_found", message: "Not found." } }, 404);
   }
 });
 
