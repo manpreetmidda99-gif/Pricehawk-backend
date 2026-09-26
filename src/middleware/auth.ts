@@ -17,7 +17,9 @@ function normalize(path: string): string {
 export function apiKeyAuth(expected: string, opts?: { publicPaths?: string[] }) {
   const publicPaths = new Set((opts?.publicPaths ?? []).map(normalize));
   return createMiddleware(async (c, next) => {
-    if (publicPaths.has(normalize(c.req.path))) return next();
+    const path = normalize(c.req.path);
+    // Exact match, or prefix match for /api/track/* (product detail + delete).
+    if (publicPaths.has(path) || path.startsWith("/api/track/")) return next();
 
     const headerKey = c.req.header("x-api-key") ?? "";
     const auth = c.req.header("authorization") ?? "";
