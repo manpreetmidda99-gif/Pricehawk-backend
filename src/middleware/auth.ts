@@ -14,12 +14,21 @@ function normalize(path: string): string {
   return path.replace(/\/+$/, "") || "/";
 }
 
-export function apiKeyAuth(expected: string, opts?: { publicPaths?: string[] }) {
+export function apiKeyAuth(
+  expected: string,
+  opts?: { publicPaths?: string[]; publicPrefixes?: string[] },
+) {
   const publicPaths = new Set((opts?.publicPaths ?? []).map(normalize));
+  const publicPrefixes = (opts?.publicPrefixes ?? []).map(normalize);
   return createMiddleware(async (c, next) => {
     const path = normalize(c.req.path);
-    // Exact match, or prefix match for /api/track/* (product detail + delete).
-    if (publicPaths.has(path) || path.startsWith("/api/track/")) return next();
+    // Exact match, prefix match, or the legacy /api/track/* prefix.
+    if (
+      publicPaths.has(path) ||
+      publicPrefixes.some((p) => path === p || path.startsWith(p + "/")) ||
+      path.startsWith("/api/track/")
+    )
+      return next();
 
     const headerKey = c.req.header("x-api-key") ?? "";
     const auth = c.req.header("authorization") ?? "";

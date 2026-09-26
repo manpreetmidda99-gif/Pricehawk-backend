@@ -465,6 +465,7 @@
           <div class="search-tabs" role="tablist" aria-label="Search method">
             <button class="search-tab" id="name-tab" type="button" role="tab" aria-selected="true" aria-controls="product-search" data-mode="name">Product name</button>
             <button class="search-tab" id="track-tab" type="button" role="tab" aria-selected="false" aria-controls="product-search" data-mode="track">Track prices</button>
+            <button class="search-tab" id="alerts-tab" type="button" role="tab" aria-selected="false" data-mode="alerts">🔔 My alerts</button>
             <button class="search-tab" id="settings-tab" type="button" role="tab" aria-selected="false" data-mode="settings">⚙️ Settings</button>
           </div>
           <form id="product-search" novalidate>
@@ -489,6 +490,35 @@
             </div>
             <button class="search-action track-submit" type="submit">Add price</button>
           </form>
+          <!-- My alerts: automatic price-drop alerts (requires account) -->
+          <div id="alerts-panel" hidden>
+            <div id="auth-forms">
+              <p style="font-size:14px;color:var(--muted);margin:0 0 12px">Create a free account to get automatic price-drop alerts by email. PriceHawk checks your products daily.</p>
+              <div class="track-grid">
+                <label class="track-field"><span>Email</span><input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" /></label>
+                <label class="track-field"><span>Password</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="Min 8 characters" /></label>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                <button class="search-action" type="button" id="login-btn">Log in</button>
+                <button class="search-action" type="button" id="register-btn" style="background:var(--surface);color:var(--ink);border:1px solid var(--line)">Sign up free</button>
+              </div>
+              <p id="auth-status" style="font-size:13px;margin:8px 0 0"></p>
+            </div>
+            <div id="alerts-dashboard" hidden>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <p style="font-size:14px;color:var(--muted);margin:0">Logged in as <strong id="user-email"></strong></p>
+                <button class="search-action" type="button" id="logout-btn" style="background:var(--muted);padding:8px 14px;font-size:13px">Log out</button>
+              </div>
+              <form id="alert-form" novalidate>
+                <div class="track-grid">
+                  <label class="track-field"><span>Product to watch</span><input id="alert-query" type="text" autocomplete="off" placeholder="e.g. Sony WH-1000XM5" /></label>
+                  <label class="track-field"><span>Alert me below</span><input id="alert-target" type="number" min="0" step="0.01" inputmode="decimal" placeholder="299.99" /></label>
+                </div>
+                <button class="search-action track-submit" type="submit">🔔 Create alert</button>
+              </form>
+              <div id="alerts-list" style="margin-top:16px"></div>
+            </div>
+          </div>
           <!-- Settings: BYOK SerpAPI key -->
           <form id="api-settings" novalidate hidden>
             <p style="font-size:14px;color:var(--muted);margin:0 0 12px">PriceHawk uses your own free SerpAPI key for automatic prices. Each key gets <strong>250 free searches/month</strong> — no credit card needed.</p>
@@ -940,10 +970,12 @@
           });
           var isTrack = searchMode === 'track';
           var isSettings = searchMode === 'settings';
-          searchForm.hidden = isTrack || isSettings;
+          var isAlerts = searchMode === 'alerts';
+          searchForm.hidden = isTrack || isSettings || isAlerts;
           trackForm.hidden = !isTrack;
           document.getElementById('api-settings').hidden = !isSettings;
-          document.querySelector('.search-note').style.display = (isTrack || isSettings) ? 'none' : '';
+          document.getElementById('alerts-panel').hidden = !isAlerts;
+          document.querySelector('.search-note').style.display = (isTrack || isSettings || isAlerts) ? 'none' : '';
           // Hide/show the serpapi hint note
           var serpNote = document.getElementById('serpapi-note');
           if (serpNote) serpNote.style.display = getSerpApiKey() ? 'none' : '';
@@ -959,6 +991,12 @@
             resultStatus.textContent = 'Ready';
             clearResults('');
             loadTracked();
+          } else if (isAlerts) {
+            resultTitle.textContent = 'Price alerts';
+            resultSummary.textContent = 'Automatic daily price checks';
+            resultStatus.textContent = 'Ready';
+            clearResults('');
+            checkAuthStatus();
           } else {
             searchInput.value = '';
             searchFeedback.hidden = true;
@@ -998,6 +1036,156 @@
         e.preventDefault();
         document.getElementById('settings-tab').click();
       });
+
+      // ---- Auth & Price Alerts ----
+      var currentUser = null;
+      async function checkAuthStatus() {
+        try {
+          var res = await fetch(PRICEHAWK_API_BASE + '/api/auth/me', { credentials: 'include' });
+          if (res.ok) {
+            var data = await res.json();
+            currentUser = data.user;
+            showAlertsDashboard();
+          } else {
+            currentUser = null;
+            showAuthForms();
+          }
+        } catch (e) {
+          currentUser = null;
+          showAuthForms();
+        }
+      }
+      function showAuthForms() {
+        document.getElementById('auth-forms').hidden = false;
+        document.getElementById('alerts-dashboard').hidden = true;
+      }
+      function showAlertsDashboard() {
+        document.getElementById('auth-forms').hidden = true;
+        document.getElementById('alerts-dashboard').hidden = false;
+        document.getElementById('user-email').textContent = currentUser ? currentUser.email : '';
+        loadAlerts();
+      }
+      function setAuthStatus(msg, isError) {
+        var el = document.getElementById('auth-status');
+        el.textContent = msg;
+        el.style.color = isError ? '#c0392b' : 'var(--muted)';
+      }
+      document.getElementById('login-btn').addEventListener('click', async function () {
+        var email = document.getElementById('auth-email').value.trim();
+        var password = document.getElementById('auth-password').value;
+        if (!email || !password) { setAuthStatus('Enter your email and password.', true); return; }
+        setAuthStatus('Logging in…');
+        try {
+          var res = await fetch(PRICEHAWK_API_BASE + '/api/auth/login', {
+            method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+          });
+          var data = await res.json();
+          if (!res.ok) throw new Error(data.error && data.error.message || 'Login failed');
+          currentUser = data.user;
+          setAuthStatus('');
+          showAlertsDashboard();
+        } catch (e) { setAuthStatus(e.message, true); }
+      });
+      document.getElementById('register-btn').addEventListener('click', async function () {
+        var email = document.getElementById('auth-email').value.trim();
+        var password = document.getElementById('auth-password').value;
+        if (!email || password.length < 8) { setAuthStatus('Enter a valid email and a password of at least 8 characters.', true); return; }
+        setAuthStatus('Creating account…');
+        try {
+          var res = await fetch(PRICEHAWK_API_BASE + '/api/auth/register', {
+            method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+          });
+          var data = await res.json();
+          if (!res.ok) throw new Error(data.error && data.error.message || 'Signup failed');
+          currentUser = data.user;
+          setAuthStatus('');
+          showAlertsDashboard();
+        } catch (e) { setAuthStatus(e.message, true); }
+      });
+      document.getElementById('logout-btn').addEventListener('click', async function () {
+        try { await fetch(PRICEHAWK_API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (e) {}
+        currentUser = null;
+        showAuthForms();
+        setAuthStatus('');
+      });
+      document.getElementById('alert-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var query = document.getElementById('alert-query').value.trim();
+        var target = parseFloat(document.getElementById('alert-target').value);
+        if (!query || !isFinite(target) || target <= 0) { setFeedback('Enter a product and a target price.', 'error'); return; }
+        try {
+          var res = await fetch(PRICEHAWK_API_BASE + '/api/alerts', {
+            method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, targetPrice: target, targetCurrency: getCurrency() })
+          });
+          var data = await res.json();
+          if (!res.ok) throw new Error(data.error && data.error.message || 'Could not create alert');
+          document.getElementById('alert-query').value = '';
+          document.getElementById('alert-target').value = '';
+          setFeedback('🔔 Alert created! We\'ll email you when the price drops below ' + formatPrice(target, getCurrency()) + '.', 'success');
+          loadAlerts();
+        } catch (err) { setFeedback(err.message, 'error'); }
+      });
+      async function loadAlerts() {
+        var list = document.getElementById('alerts-list');
+        try {
+          var res = await fetch(PRICEHAWK_API_BASE + '/api/alerts', { credentials: 'include' });
+          if (res.status === 401) { showAuthForms(); return; }
+          var data = await res.json();
+          var alerts = data.alerts || [];
+          if (!alerts.length) {
+            list.innerHTML = '<p style="font-size:14px;color:var(--muted)">No alerts yet. Add your first product above and we\'ll watch it daily.</p>';
+            return;
+          }
+          list.innerHTML = '';
+          alerts.forEach(function (a) {
+            var card = document.createElement('div');
+            card.className = 'offer' + (a.active ? '' : ' paused');
+            card.style.marginBottom = '8px';
+            var info = document.createElement('div');
+            info.className = 'store';
+            var name = document.createElement('strong');
+            name.textContent = a.query;
+            var detail = document.createElement('span');
+            var parts = ['Target: ' + formatPrice(a.targetPrice, a.targetCurrency)];
+            if (a.lastPrice) parts.push('Last seen: ' + formatPrice(a.lastPrice, a.lastCurrency || a.targetCurrency));
+            if (a.lastCheckedAt) parts.push('Checked ' + new Date(a.lastCheckedAt).toLocaleDateString());
+            if (!a.active) parts.push('⏸ Paused');
+            detail.textContent = parts.join(' · ');
+            info.append(name, detail);
+            var actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '6px';
+            var toggle = document.createElement('button');
+            toggle.className = 'search-action';
+            toggle.style.cssText = 'padding:6px 12px;font-size:12px;background:var(--surface-2);color:var(--ink)';
+            toggle.textContent = a.active ? 'Pause' : 'Resume';
+            toggle.addEventListener('click', async function () {
+              await fetch(PRICEHAWK_API_BASE + '/api/alerts/' + a.id, {
+                method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: !a.active })
+              });
+              loadAlerts();
+            });
+            var del = document.createElement('button');
+            del.className = 'search-action';
+            del.style.cssText = 'padding:6px 12px;font-size:12px;background:#c0392b';
+            del.textContent = 'Delete';
+            del.addEventListener('click', async function () {
+              if (!confirm('Delete this alert?')) return;
+              await fetch(PRICEHAWK_API_BASE + '/api/alerts/' + a.id, { method: 'DELETE', credentials: 'include' });
+              loadAlerts();
+            });
+            actions.append(toggle, del);
+            card.append(info, actions);
+            list.appendChild(card);
+          });
+        } catch (e) {
+          list.innerHTML = '<p style="font-size:14px;color:var(--muted)">Could not load alerts.</p>';
+        }
+      }
 
       searchForm.addEventListener('submit', async function (event) {
         event.preventDefault();

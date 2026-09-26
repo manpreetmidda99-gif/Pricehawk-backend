@@ -59,5 +59,37 @@ export async function ensureSchema(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_manual_prices_product
       ON manual_prices (product_id, recorded_at DESC);
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_sessions_user
+      ON sessions (user_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_token
+      ON sessions (token_hash);
+    CREATE TABLE IF NOT EXISTS price_alerts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      query TEXT NOT NULL,
+      target_price NUMERIC NOT NULL,
+      target_currency TEXT NOT NULL DEFAULT 'USD',
+      last_price NUMERIC,
+      last_currency TEXT,
+      last_checked_at TIMESTAMPTZ,
+      last_notified_price NUMERIC,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_price_alerts_user
+      ON price_alerts (user_id, active);
   `);
 }

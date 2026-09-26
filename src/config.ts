@@ -39,4 +39,13 @@ export const config = {
   searchRateLimitMax: int("SEARCH_RATE_LIMIT_MAX", 20),
 
   fxApiUrl: process.env.FX_API_URL ?? "https://open.er-api.com/v6/latest/USD",
+
+  // Server-side SerpAPI key used by the daily alert scheduler.
+  // Optional: without it, scheduled price checks are skipped.
+  serpapiKey: process.env.SERPAPI_KEY ?? "",
+
+  // Resend API key for price-drop emails. Optional: without it,
+  // alerts are logged to the console instead of emailed (dev mode).
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+  emailFrom: process.env.EMAIL_FROM ?? "PriceHawk <alerts@pricehawk-api.onrender.com>",
 };

@@ -22,6 +22,9 @@ import { priceRoute } from "./routes/price.js";
 import { searchRoute } from "./routes/search.js";
 import { trackRoute } from "./routes/track.js";
 import { watchlistRoute } from "./routes/watchlist.js";
+import { authRoute } from "./routes/auth.js";
+import { alertsRoute } from "./routes/alerts.js";
+import { startAlertScheduler } from "./lib/scheduler.js";
 
 const app = new Hono();
 
@@ -41,8 +44,9 @@ app.use(
         : config.corsOrigins.includes(origin)
           ? origin
           : undefined,
-    allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "x-api-key", "Authorization"],
+    credentials: true,
     maxAge: 600,
   }),
 );
@@ -55,11 +59,15 @@ app.use(
 
 // Shared-secret auth on /api/* — except the public endpoints the
 // website calls directly from browsers (/api/search, /api/compare,
-// /api/track), which rely on strict rate limits instead of a key.
-// /health stays public.
+// /api/track), which rely on strict rate limits instead of a key,
+// and /api/auth + /api/alerts, which use cookie sessions (requireAuth)
+// instead of the shared secret. /health stays public.
 app.use(
   "/api/*",
-  apiKeyAuth(config.apiKey, { publicPaths: ["/api/search", "/api/compare", "/api/track"] }),
+  apiKeyAuth(config.apiKey, {
+    publicPaths: ["/api/search", "/api/compare", "/api/track"],
+    publicPrefixes: ["/api/auth", "/api/alerts"],
+  }),
 );
 
 // Stricter limits on the expensive endpoints (retailer fetching).
@@ -76,6 +84,8 @@ app.route("/api/price", priceRoute(priceCache));
 app.route("/api/compare", compareRoute(priceCache));
 app.route("/api/watchlist", watchlistRoute(priceCache));
 app.route("/api/track", trackRoute());
+app.route("/api/auth", authRoute());
+app.route("/api/alerts", alertsRoute());
 
 // Serve the PriceHawk website (same origin, so no mixed-content issues).
 const here = dirname(fileURLToPath(import.meta.url));
@@ -123,6 +133,8 @@ async function main() {
   await ensureSchema();
   // Touch the pool so a bad DATABASE_URL fails fast here, not on first request.
   await pool.query("SELECT 1");
+  // Daily price-alert checks (first run 60s after boot).
+  startAlertScheduler();
   serve({ fetch: app.fetch, port: config.port }, () => {
     console.log(`pricehawk-api listening on :${config.port}`);
   });
