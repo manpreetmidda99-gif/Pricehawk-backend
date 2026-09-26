@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>PriceHawk — Find the lowest price, fast</title>
+  <meta name="description" content="PriceHawk compares offers across retailers, lays out every price clearly, and points you straight to the best deal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f3;
+      --surface: #ffffff;
+      --surface-2: #efefe9;
+      --ink: #171815;
+      --muted: #62645d;
+      --line: #d9dad2;
+      --accent: #ee5a2a;
+      --accent-deep: #b9340e;
+      --accent-soft: #ffe4d9;
+      --green: #18764a;
+      --green-soft: #dff4e8;
+      --shadow: 0 22px 60px rgba(31, 29, 24, .10);
+      --shadow-sm: 0 9px 25px rgba(31, 29, 24, .07);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #11120f;
+        --surface: #1a1b17;
+        --surface-2: #24251f;
+        --ink: #f5f5ee;
+        --muted: #aaaDA4;
+        --line: #363830;
+        --accent: #ff7043;
+        --accent-deep: #ff916e;
+        --accent-soft: #402218;
+        --green: #64cf96;
+        --green-soft: #173728;
+        --shadow: 0 22px 60px rgba(0, 0, 0, .28);
+        --shadow-sm: 0 9px 25px rgba(0, 0, 0, .20);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; }
+    button { font: inherit; }
+    svg { display: block; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin-inline: auto; }
+    .topbar {
+      min-height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .nav { display: flex; align-items: center; gap: 28px; }
+    .nav a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; }
+    .nav a:hover, .nav a:focus-visible { color: var(--ink); }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: var(--ink);
+      color: var(--bg);
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .18s ease, background-color .18s ease;
+    }
+    .button:hover { transform: translateY(-2px); }
+    .button:focus-visible, .nav a:focus-visible, .faq-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .button.accent { background: var(--accent); color: #fff; }
+    .button.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+    .menu-button { display: none; background: none; border: 0; color: var(--ink); padding: 8px; cursor: pointer; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(440px, 1.08fr);
+      gap: clamp(48px, 7vw, 100px);
+      align-items: center;
+      padding: 80px 0 92px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 9px;
+      align-items: center;
+      margin: 0 0 18px;
+      color: var(--accent-deep);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 24px; height: 2px; background: currentColor; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2 { font-family: "Newsreader", Georgia, serif; letter-spacing: -.035em; }
+    h1 { margin-bottom: 24px; font-size: clamp(48px, 6.2vw, 78px); line-height: .96; font-weight: 600; }
+    .hero-copy > p:not(.eyebrow) { max-width: 570px; margin-bottom: 32px; color: var(--muted); font-size: 19px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .proof { display: flex; gap: 24px; margin-top: 32px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .proof span { display: inline-flex; align-items: center; gap: 7px; }
+    .proof svg { color: var(--green); }
+
+    .product-window {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .window-bar { display: flex; align-items: center; gap: 7px; padding: 15px 17px; border-bottom: 1px solid var(--line); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+    .window-title { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 600; }
+    .product-content { padding: 24px; }
+    .search-tabs { display: flex; gap: 6px; margin-bottom: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+    .search-tab { flex: 1; min-height: 38px; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+    .search-tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 2px 8px rgba(31, 29, 24, .08); }
+    .search-field { display: flex; gap: 10px; padding: 7px 7px 7px 15px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; }
+    .search-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+    .search-value { min-width: 0; flex: 1; display: flex; align-items: center; gap: 10px; color: var(--muted); }
+    .search-value input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; }
+    .search-value input::placeholder { color: var(--muted); opacity: 1; }
+    .search-action { flex: none; min-width: 76px; border: 0; border-radius: 7px; background: var(--accent); color: #fff; padding: 10px 15px; font-weight: 700; cursor: pointer; }
+    .search-action:hover { background: var(--accent-deep); }
+    .search-action:disabled { cursor: wait; opacity: .72; }
+    .search-tab:focus-visible, .search-action:focus-visible, .search-value input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .search-note { display: flex; align-items: center; gap: 7px; margin: 10px 2px 0; color: var(--muted); font-size: 11px; }
+    .search-feedback { margin-top: 14px; padding: 11px 13px; border-radius: 8px; background: var(--accent-soft); color: var(--ink); font-size: 12px; }
+    .search-feedback[data-state="success"] { background: var(--green-soft); }
+    .search-feedback[hidden] { display: none; }
+    .result-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 24px 0 12px; }
+    .result-head p { margin: 0; color: var(--muted); font-size: 12px; }
+    .result-head strong { display: block; font-size: 17px; }
+    .sample-tag { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
+    .offer-list { display: grid; gap: 9px; }
+    .offer {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 16px;
+      align-items: center;
+      min-width: 0;
+      padding: 14px 15px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+    .offer.best { border-color: var(--green); background: var(--green-soft); }
+    .store { min-width: 0; }
+    .store strong { display: block; font-size: 14px; }
+    .store span { display: block; color: var(--muted); font-size: 11px; }
+    .price { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .deal-link { display: inline-flex; align-items: center; gap: 4px; color: var(--green); font-size: 12px; font-weight: 700; text-decoration: none; }
+    .deal-link:hover { text-decoration: underline; }
+    .offer-empty { padding: 22px 15px; border-block: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    .unavailable { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .unavailable[hidden] { display: none; }
+    .unavailable h3 { margin: 0 0 9px; font-size: 13px; }
+    .unavailable-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+    .unavailable-list li { display: flex; justify-content: space-between; gap: 14px; color: var(--muted); font-size: 12px; }
+    .unavailable-list strong { color: var(--ink); }
+    .best-flag { position: absolute; top: -14px; right: 24px; padding: 8px 13px; background: var(--green); color: #fff; border-radius: 6px; font-size: 12px; font-weight: 700; transform: rotate(2deg); box-shadow: var(--shadow-sm); }
+
+    .signal-strip { border-block: 1px solid var(--line); }
+    .signals { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .signal { padding: 28px 22px; border-right: 1px solid var(--line); }
+    .signal:first-child { padding-left: 0; }
+    .signal:last-child { border-right: 0; }
+    .signal strong { display: block; margin-bottom: 4px; font-size: 18px; }
+    .signal span { color: var(--muted); font-size: 13px; }
+
+    section { padding: 104px 0; }
+    .section-heading { max-width: 680px; margin-bottom: 50px; }
+    .section-heading h2 { margin-bottom: 14px; font-size: clamp(38px, 4vw, 55px); line-height: 1.02; }
+    .section-heading p { margin: 0; color: var(--muted); font-size: 18px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-block: 1px solid var(--line); }
+    .step { position: relative; padding: 36px 38px 36px 0; }
+    .step + .step { padding-left: 38px; border-left: 1px solid var(--line); }
+    .step-num { display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 28px; border-radius: 50%; background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 700; }
+    .step h3 { margin-bottom: 10px; font-size: 20px; }
+    .step p { margin: 0; color: var(--muted); }
+
+    .coverage { background: var(--ink); color: var(--bg); }
+    .coverage-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: 80px; align-items: start; }
+    .coverage h2 { margin-bottom: 18px; font-size: clamp(38px, 4vw, 56px); line-height: 1.02; }
+    .coverage-copy p { color: color-mix(in srgb, var(--bg) 68%, transparent); font-size: 18px; }
+    .coverage-note { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; color: color-mix(in srgb, var(--bg) 76%, transparent); font-size: 13px; }
+    .coverage-list { border-top: 1px solid color-mix(in srgb, var(--bg) 22%, transparent); }
+    .coverage-row { display: grid; grid-template-columns: 48px 1fr; gap: 18px; align-items: center; padding: 24px 0; border-bottom: 1px solid color-mix(in srgb, var(--bg) 22%, transparent); }
+    .coverage-icon { color: var(--accent); }
+    .coverage-row strong { display: block; margin-bottom: 3px; font-size: 17px; }
+    .coverage-row span { color: color-mix(in srgb, var(--bg) 62%, transparent); font-size: 14px; }
+
+    .feature-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+    .feature {
+      min-height: 250px;
+      padding: 34px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-sm);
+    }
+    .feature:nth-child(1), .feature:nth-child(4) { border-radius: 18px 5px 18px 5px; }
+    .feature:nth-child(2), .feature:nth-child(3) { border-radius: 5px 18px 5px 18px; }
+    .feature svg { color: var(--accent); margin-bottom: 42px; }
+    .feature h3 { margin-bottom: 10px; font-size: 21px; }
+    .feature p { margin: 0; color: var(--muted); }
+
+    .price-section { padding-top: 40px; }
+    .price-box { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center; padding: 52px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line)); border-radius: 20px; }
+    .price-box h2 { margin-bottom: 10px; font-size: clamp(36px, 4vw, 52px); line-height: 1; }
+    .price-box p { max-width: 630px; margin: 0; color: var(--muted); }
+    .cost { text-align: right; }
+    .cost strong { display: block; font-family: "Newsreader", Georgia, serif; font-size: 52px; line-height: .95; }
+    .cost span { color: var(--muted); font-size: 13px; font-weight: 600; }
+
+    .faq-grid { display: grid; grid-template-columns: .7fr 1.3fr; gap: 80px; }
+    .faq-grid h2 { font-size: clamp(38px, 4vw, 54px); line-height: 1; }
+    .faq-list { border-top: 1px solid var(--line); }
+    .faq-item { border-bottom: 1px solid var(--line); }
+    .faq-button { width: 100%; display: flex; justify-content: space-between; gap: 20px; padding: 23px 0; border: 0; background: none; color: var(--ink); text-align: left; font-weight: 700; cursor: pointer; }
+    .faq-button svg { flex: none; transition: transform .2s ease; }
+    .faq-button[aria-expanded="true"] svg { transform: rotate(45deg); }
+    .faq-answer { display: none; max-width: 620px; padding: 0 40px 22px 0; color: var(--muted); }
+    .faq-answer.open { display: block; }
+
+    .final { padding-top: 20px; }
+    .final-inner { padding: 70px 0; border-top: 1px solid var(--line); text-align: center; }
+    .final h2 { max-width: 700px; margin: 0 auto 16px; font-size: clamp(40px, 5vw, 64px); line-height: 1; }
+    .final p { max-width: 570px; margin: 0 auto 28px; color: var(--muted); font-size: 18px; }
+    .platform { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; color: var(--muted); font-size: 13px; font-weight: 600; }
+
+    footer { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 0 max(24px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    footer nav { display: flex; flex-wrap: wrap; gap: 18px; }
+    footer a { text-decoration: none; }
+    footer a:hover { color: var(--ink); }
+
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; padding-top: 60px; }
+      .hero-copy { max-width: 680px; }
+      .product-window { max-width: 680px; }
+      .signals { grid-template-columns: repeat(2, 1fr); }
+      .signal:nth-child(2) { border-right: 0; }
+      .signal:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .signal:nth-child(3) { padding-left: 0; }
+      .coverage-grid, .faq-grid { grid-template-columns: 1fr; gap: 46px; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .topbar { min-height: 58px; }
+      .menu-button { display: block; }
+      .nav {
+        display: none;
+        position: absolute;
+        z-index: 20;
+        top: 58px;
+        left: 14px;
+        right: 14px;
+        padding: 16px;
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+      .nav.open { display: flex; }
+      .nav a { padding: 12px; }
+      .nav .button { margin-top: 6px; }
+      .hero { gap: 50px; padding: 46px 0 68px; }
+      h1 { font-size: clamp(46px, 15vw, 64px); }
+      .hero-copy > p:not(.eyebrow) { font-size: 17px; }
+      .proof { flex-direction: column; gap: 10px; }
+      .product-content { padding: 16px; }
+      .search-field { padding: 6px 6px 6px 12px; }
+      .search-value { font-size: 12px; }
+      .search-action { padding-inline: 10px; font-size: 12px; }
+      .result-head { align-items: start; }
+      .offer { grid-template-columns: 1fr auto; gap: 6px 12px; }
+      .deal-link { grid-column: 1 / -1; }
+      .best-flag { right: 12px; }
+      .signals { grid-template-columns: 1fr; }
+      .signal { padding: 20px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+      .signal:nth-child(2) { border-bottom: 1px solid var(--line); }
+      .signal:last-child { border-bottom: 0; }
+      section { padding: 76px 0; }
+      .section-heading { margin-bottom: 36px; }
+      .section-heading p { font-size: 16px; }
+      .steps { grid-template-columns: 1fr; }
+      .step, .step + .step { padding: 26px 0; border-left: 0; border-bottom: 1px solid var(--line); }
+      .step:last-child { border-bottom: 0; }
+      .step-num { margin-bottom: 18px; }
+      .coverage-grid { gap: 34px; }
+      .feature-layout { grid-template-columns: 1fr; }
+      .feature { min-height: 0; padding: 26px; }
+      .feature svg { margin-bottom: 30px; }
+      .price-section { padding-top: 10px; }
+      .price-box { grid-template-columns: 1fr; padding: 34px 26px; }
+      .cost { text-align: left; }
+      .faq-grid { gap: 24px; }
+      .final-inner { padding: 60px 0; }
+      footer { align-items: flex-start; flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="wrap topbar">
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open navigation">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <nav class="nav" id="site-nav" aria-label="Main navigation">
+      <a href="#search">Search</a>
+      <a href="#how">How it works</a>
+      <a href="#coverage">What it checks</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Smarter price tracking</p>
+        <h1>Stop overpaying. Let PriceHawk do the hunting.</h1>
+        <p>Paste a product link once. PriceHawk checks stores, lays out every price clearly, and takes you straight to the lowest offer.</p>
+        <div class="hero-actions">
+          <a class="button accent" href="#search">Search products
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a class="button ghost" href="#how">How it works</a>
+        </div>
+        <div class="proof" aria-label="Product benefits">
+          <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>No endless tab hopping</span>
+          <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Direct retailer links</span>
+        </div>
+      </div>
+
+      <div class="product-window" id="search" aria-label="PriceHawk product search">
+        <div class="best-flag">Search here</div>
+        <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="window-title">Product search</span></div>
+        <div class="product-content">
+          <div class="search-tabs" role="tablist" aria-label="Search method">
+            <button class="search-tab" id="name-tab" type="button" role="tab" aria-selected="true" aria-controls="product-search" data-mode="name">Product name</button>
+            <button class="search-tab" id="link-tab" type="button" role="tab" aria-selected="false" aria-controls="product-search" data-mode="link">Product link</button>
+          </div>
+          <form id="product-search" novalidate>
+            <label class="search-field" for="product-query">
+              <span class="search-value">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <input id="product-query" name="query" type="search" autocomplete="off" placeholder="Search by brand, model, or product" aria-label="Product name" />
+              </span>
+              <button class="search-action" type="submit">Search</button>
+            </label>
+          </form>
+          <div class="search-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Live results come from PriceHawk’s public comparison service.
+          </div>
+          <div class="search-feedback" id="search-feedback" role="status" aria-live="polite" hidden></div>
+          <div class="result-head">
+            <div><strong id="result-title">Search results</strong><p id="result-summary">Enter a product above to compare retailers</p></div>
+            <span class="sample-tag" id="result-status">Ready</span>
+          </div>
+          <div class="offer-list" id="offer-list" aria-live="polite" aria-busy="false">
+            <div class="offer-empty">No search yet. Your matching retailer offers will appear here.</div>
+          </div>
+          <div class="unavailable" id="unavailable" hidden>
+            <h3>Stores that could not be checked</h3>
+            <ul class="unavailable-list" id="unavailable-list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="signal-strip">
+      <div class="wrap signals">
+        <div class="signal"><strong>One search</strong><span>Compare multiple stores at once</span></div>
+        <div class="signal"><strong>Every offer</strong><span>Prices laid out side by side</span></div>
+        <div class="signal"><strong>One clear winner</strong><span>Lowest total price highlighted</span></div>
+        <div class="signal"><strong>Direct route</strong><span>Go straight to the retailer</span></div>
+      </div>
+    </div>
+
+    <section class="wrap" id="how">
+      <div class="section-heading">
+        <p class="eyebrow">How it works</p>
+        <h2>From product link to best price in three steps.</h2>
+        <p>No spreadsheets. No juggling tabs. PriceHawk keeps the comparison simple and transparent.</p>
+      </div>
+      <div class="steps">
+        <article class="step"><span class="step-num">01</span><h3>Add what you want</h3><p>Paste a product URL or search by product name to start a watch.</p></article>
+        <article class="step"><span class="step-num">02</span><h3>See every offer</h3><p>Compare the product price, delivery cost, and availability across matching stores.</p></article>
+        <article class="step"><span class="step-num">03</span><h3>Buy with confidence</h3><p>Open the lowest-priced retailer directly when the deal is right for you.</p></article>
+      </div>
+    </section>
+
+    <section class="coverage" id="coverage">
+      <div class="wrap coverage-grid">
+        <div class="coverage-copy">
+          <p class="eyebrow">Built for the real total</p>
+          <h2>A lower sticker price is not always the better deal.</h2>
+          <p>PriceHawk is designed to compare what actually matters at checkout—not just the biggest number on the product page.</p>
+          <span class="coverage-note">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Retailer coverage varies by product and region.
+          </span>
+        </div>
+        <div class="coverage-list">
+          <div class="coverage-row">
+            <svg class="coverage-icon" width="38" height="38" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M9 16h30l-3 23H12L9 16Z" stroke="currentColor" stroke-width="2.5"/><path d="M17 16V9h14v7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+            <div><strong>Product price</strong><span>The listed price from every matching retailer.</span></div>
+          </div>
+          <div class="coverage-row">
+            <svg class="coverage-icon" width="38" height="38" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M6 12h24v23H6V12Zm24 9h7l5 7v7H30V21Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="14" cy="37" r="4" stroke="currentColor" stroke-width="2.5"/><circle cx="35" cy="37" r="4" stroke="currentColor" stroke-width="2.5"/></svg>
+            <div><strong>Delivery cost</strong><span>Shipping fees shown beside the product price.</span></div>
+          </div>
+          <div class="coverage-row">
+            <svg class="coverage-icon" width="38" height="38" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M8 36 20 24l8 8 12-17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M31 15h9v9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div><strong>Price movement</strong><span>A clear history of drops and rises over time.</span></div>
+          </div>
+          <div class="coverage-row">
+            <svg class="coverage-icon" width="38" height="38" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M13 37h22l-3-4V22a8 8 0 0 0-16 0v11l-3 4Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M21 40h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+            <div><strong>Target alerts</strong><span>Know when an item reaches the price you chose.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="features">
+      <div class="section-heading">
+        <p class="eyebrow">Made for decisive shopping</p>
+        <h2>Everything you need to know before you click buy.</h2>
+      </div>
+      <div class="feature-layout">
+        <article class="feature">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <h3>Price history that makes sense</h3><p>See whether today's offer is genuinely low or merely dressed up as a sale.</p>
+        </article>
+        <article class="feature">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v18M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <h3>Prices from each store</h3><p>Scan a clean list of offers instead of taking a black-box recommendation on trust.</p>
+        </article>
+        <article class="feature">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h3>Direct links, no detours</h3><p>Open the exact retailer offer you chose without repeating your search elsewhere.</p>
+        </article>
+        <article class="feature">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h3>Honest availability</h3><p>If a store cannot be checked, PriceHawk says so instead of inventing a price.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap price-section" id="pricing">
+      <div class="price-box">
+        <div><p class="eyebrow">Simple start</p><h2>Try the hunt for free.</h2><p>Compare prices and build your first watchlist without a subscription. Additional tracking options can grow with you.</p></div>
+        <div class="cost"><strong>$0</strong><span>to get started</span></div>
+      </div>
+    </section>
+
+    <section class="wrap" id="faq">
+      <div class="faq-grid">
+        <div><p class="eyebrow">Good to know</p><h2>Questions, answered.</h2></div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-button" type="button" aria-expanded="true"><span>Does PriceHawk sell products?</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <div class="faq-answer open">No. PriceHawk compares retailer offers and sends you to the store you select. Checkout happens with that retailer.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-button" type="button" aria-expanded="false"><span>Is the cheapest offer always ranked first?</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <div class="faq-answer">Offers are designed to be sorted by total price, including visible delivery costs, so the comparison stays useful.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-button" type="button" aria-expanded="false"><span>What happens if a store blocks a price check?</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <div class="faq-answer">That store is marked as unavailable. PriceHawk does not guess at prices it cannot verify.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-button" type="button" aria-expanded="false"><span>Will there be an Android app?</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <div class="faq-answer">An Android release is planned. Store availability will be announced after the production service and publishing requirements are complete.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap final">
+      <div class="final-inner">
+        <h2>Your next best price should find you.</h2>
+        <p>PriceHawk puts the offers in one place, highlights the winner, and leaves the final call with you.</p>
+        <a class="button accent" href="#search">Open product search</a><br />
+        <span class="platform">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 8h10a3 3 0 0 1 3 3v7H4v-7a3 3 0 0 1 3-3Z" stroke="currentColor" stroke-width="2"/><path d="m8 5-2-2m10 2 2-2M8 12h.01M16 12h.01M7 18v3m10-3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Android app in development
+        </span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <span>© 2026 PriceHawk</span>
+    <nav aria-label="Footer navigation"><a href="#how">How it works</a><a href="#features">Features</a><a href="#faq">FAQ</a></nav>
+  </footer>
+
+  <script>
+    (function () {
+      var menuButton = document.querySelector('.menu-button');
+      var nav = document.getElementById('site-nav');
+      menuButton.addEventListener('click', function () {
+        var open = nav.classList.toggle('open');
+        menuButton.setAttribute('aria-expanded', String(open));
+        menuButton.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+      });
+      nav.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          nav.classList.remove('open');
+          menuButton.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      document.querySelectorAll('.faq-button').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var answer = button.nextElementSibling;
+          var open = button.getAttribute('aria-expanded') === 'true';
+          button.setAttribute('aria-expanded', String(!open));
+          answer.classList.toggle('open', !open);
+        });
+      });
+
+      /* Public PriceHawk API base. This browser client never sends or stores an API key. */
+      var PRICEHAWK_API_BASE = '';
+      var searchForm = document.getElementById('product-search');
+      var searchInput = document.getElementById('product-query');
+      var searchButton = searchForm.querySelector('.search-action');
+      var searchFeedback = document.getElementById('search-feedback');
+      var searchTabs = document.querySelectorAll('.search-tab');
+      var offerList = document.getElementById('offer-list');
+      var unavailableBox = document.getElementById('unavailable');
+      var unavailableList = document.getElementById('unavailable-list');
+      var resultTitle = document.getElementById('result-title');
+      var resultSummary = document.getElementById('result-summary');
+      var resultStatus = document.getElementById('result-status');
+      var searchMode = 'name';
+
+      function setFeedback(message, state) {
+        searchFeedback.textContent = message;
+        searchFeedback.dataset.state = state || 'info';
+        searchFeedback.hidden = false;
+      }
+
+      function clearResults(message) {
+        offerList.replaceChildren();
+        var empty = document.createElement('div');
+        empty.className = 'offer-empty';
+        empty.textContent = message;
+        offerList.appendChild(empty);
+        unavailableList.replaceChildren();
+        unavailableBox.hidden = true;
+      }
+
+      function formatPrice(value, currency) {
+        var amount = Number(value);
+        var code = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : '';
+        if (!Number.isFinite(amount)) return 'Price unavailable' + (code ? ' ' + code : '');
+        var formatted;
+        try {
+          formatted = code ? new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(amount) : amount.toFixed(2);
+        } catch (error) {
+          formatted = amount.toFixed(2);
+        }
+        return formatted + (code ? ' ' + code : '');
+      }
+
+      function safeRetailerUrl(value) {
+        try {
+          var parsed = new URL(value);
+          return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '';
+        } catch (error) {
+          return '';
+        }
+      }
+
+      function isCheapestOffer(offer, cheapest) {
+        if (!cheapest || typeof cheapest !== 'object') return false;
+        if (offer === cheapest) return true;
+        if (offer.url && cheapest.url && offer.url === cheapest.url) return true;
+        return offer.store === cheapest.store && Number(offer.price) === Number(cheapest.price) && offer.currency === cheapest.currency;
+      }
+
+      function renderUnavailable(items) {
+        unavailableList.replaceChildren();
+        var entries = Array.isArray(items) ? items : [];
+        unavailableBox.hidden = entries.length === 0;
+        entries.forEach(function (item) {
+          var row = document.createElement('li');
+          var store = document.createElement('strong');
+          var reason = document.createElement('span');
+          store.textContent = item && item.store ? item.store : 'Retailer';
+          reason.textContent = item && item.message ? item.message : 'This store could not be checked.';
+          row.append(store, reason);
+          unavailableList.appendChild(row);
+        });
+      }
+
+      function renderOffers(data, endpoint) {
+        var offers = Array.isArray(data.offers) ? data.offers : [];
+        var rankingDeclined = data.ranking && data.ranking.status === 'declined';
+        var cheapest = endpoint === '/api/compare' && !rankingDeclined ? data.cheapest : null;
+        if (endpoint === '/api/search' && offers.length) {
+          var priced = offers.filter(function (offer) { return Number.isFinite(Number(offer.price)); });
+          var currencies = priced.map(function (offer) { return String(offer.currency || '').toUpperCase(); });
+          var oneCurrency = currencies.length === offers.length && currencies.every(function (currency) { return currency && currency === currencies[0]; });
+          if (oneCurrency) cheapest = priced.reduce(function (lowest, offer) { return Number(offer.price) < Number(lowest.price) ? offer : lowest; });
+        }
+        offerList.replaceChildren();
+
+        if (!offers.length) {
+          clearResults('No verified retailer offers were returned for this search.');
+        } else {
+          offers.forEach(function (offer) {
+            var row = document.createElement('article');
+            var store = document.createElement('div');
+            var storeName = document.createElement('strong');
+            var title = document.createElement('span');
+            var price = document.createElement('div');
+            var linkUrl = safeRetailerUrl(offer.url);
+            var link = linkUrl ? document.createElement('a') : document.createElement('span');
+            var winner = Boolean(cheapest && isCheapestOffer(offer, cheapest));
+
+            row.className = 'offer' + (winner ? ' best' : '');
+            store.className = 'store';
+            storeName.textContent = offer.store || 'Retailer';
+            title.textContent = offer.title || (offer.inStock === false ? 'Currently out of stock' : 'Matching offer');
+            price.className = 'price';
+            price.textContent = formatPrice(offer.price, offer.currency);
+            link.className = 'deal-link';
+            link.textContent = winner ? 'Best price ↗' : 'View offer ↗';
+            if (linkUrl) {
+              link.href = linkUrl;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              link.setAttribute('aria-label', 'View offer from ' + (offer.store || 'retailer'));
+            }
+            store.append(storeName, title);
+            row.append(store, price, link);
+            offerList.appendChild(row);
+          });
+        }
+
+        renderUnavailable(data.unavailable);
+        resultTitle.textContent = offers.length === 1 ? '1 retailer offer' : offers.length + ' retailer offers';
+        resultSummary.textContent = rankingDeclined ? (data.ranking.reason || 'A cheapest offer could not be ranked reliably.') : 'Live results from the PriceHawk comparison service';
+        resultStatus.textContent = rankingDeclined ? 'No winner ranked' : 'Live results';
+
+        var notes = [];
+        if (data.fx) notes.push(typeof data.fx === 'string' ? data.fx : (data.fx.note || data.fx.message || 'Currency conversion was applied.'));
+        if (data.note) notes.push(data.note);
+        if (rankingDeclined) notes.unshift(data.ranking.reason || 'PriceHawk declined to rank a winner because the offers are not directly comparable.');
+        if (notes.length) setFeedback(notes.join(' '), rankingDeclined ? 'info' : 'success');
+        else searchFeedback.hidden = true;
+      }
+
+      function errorMessage(error, status) {
+        var code = error && error.code;
+        var message = error && error.message;
+        if (code === 'blocked') return message || 'The retailer blocked this price check. Try another product or retailer.';
+        if (code === 'ambiguous') return message || 'That search matches more than one product. Add a brand or model number and try again.';
+        if (code === 'rate_limited' || status === 429) return message || 'PriceHawk has reached its search limit. Please wait a moment and try again.';
+        if (code === 'fetch_error') return message || 'PriceHawk could not retrieve retailer prices for that product.';
+        return message || 'PriceHawk could not complete that search.';
+      }
+
+      searchTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          searchMode = tab.getAttribute('data-mode');
+          searchTabs.forEach(function (item) {
+            item.setAttribute('aria-selected', String(item === tab));
+          });
+          searchInput.value = '';
+          searchInput.type = searchMode === 'link' ? 'url' : 'search';
+          searchInput.placeholder = searchMode === 'link' ? 'Paste a retailer product URL' : 'Search by brand, model, or product';
+          searchInput.setAttribute('aria-label', searchMode === 'link' ? 'Retailer product link' : 'Product name');
+          searchFeedback.hidden = true;
+          searchInput.focus();
+        });
+      });
+
+      searchForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        var query = searchInput.value.trim();
+        if (!query) {
+          setFeedback(searchMode === 'link' ? 'Paste a product link to continue.' : 'Enter a product name to continue.', 'error');
+          searchInput.focus();
+          return;
+        }
+        if (searchMode === 'link' && !/^https?:\/\//i.test(query)) {
+          setFeedback('Use a full retailer link beginning with http:// or https://.', 'error');
+          searchInput.focus();
+          return;
+        }
+
+        var endpoint = searchMode === 'link' ? '/api/compare' : '/api/search';
+        var payload = searchMode === 'link' ? { url: query } : { query: query };
+        searchButton.disabled = true;
+        searchButton.textContent = 'Searching…';
+        offerList.setAttribute('aria-busy', 'true');
+        resultTitle.textContent = 'Searching retailers';
+        resultSummary.textContent = 'Checking available offers now';
+        resultStatus.textContent = 'Loading';
+        setFeedback('Searching live retailer offers…', 'info');
+        clearResults('Contacting the PriceHawk comparison service…');
+
+        try {
+          var response = await fetch(PRICEHAWK_API_BASE + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          var data;
+          try {
+            data = await response.json();
+          } catch (parseError) {
+            data = null;
+          }
+          if (!response.ok || (data && data.error)) {
+            var apiError = data && data.error ? data.error : null;
+            throw { isApiError: true, message: errorMessage(apiError, response.status) };
+          }
+          if (!data || !Array.isArray(data.offers)) {
+            throw { isApiError: true, message: 'PriceHawk received an incomplete response. Please try again.' };
+          }
+          renderOffers(data, endpoint);
+        } catch (error) {
+          var message = error && error.isApiError ? error.message : 'The PriceHawk backend is not connected yet. Please try again after the public service is deployed.';
+          setFeedback(message, 'error');
+          clearResults('No live results are available right now.');
+          resultTitle.textContent = 'Search unavailable';
+          resultSummary.textContent = 'The backend is not connected yet';
+          resultStatus.textContent = 'Offline';
+        } finally {
+          searchButton.disabled = false;
+          searchButton.textContent = 'Search';
+          offerList.setAttribute('aria-busy', 'false');
+        }
+      });
+    }());
+  </script>
+</body>
+</html>

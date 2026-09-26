@@ -1,0 +1,1 @@
+/home/hatch/workspace/pricehawk-backend/node_modules/@embedded-postgres/linux-x64/native/bin/postgres "-D" "/home/hatch/workspace/pricehawk-backend/.pghome/pgdata" "-p" "5433"

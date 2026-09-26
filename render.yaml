@@ -1,0 +1,29 @@
+# Render Blueprint: deploys the API + a managed Postgres in one click.
+# In Render: New -> Blueprint -> connect your GitHub repo containing this file.
+services:
+  - type: web
+    name: pricehawk-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_KEY
+        generateValue: true # Render creates a random secret; copy it from the dashboard after deploy
+      - key: CORS_ORIGINS
+        value: https://your-pricehawk-site.example.com # <-- change to your real site URL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pricehawk-db
+          property: connectionString
+      - key: CACHE_TTL_SECONDS
+        value: "900"
+      - key: SEARCH_RATE_LIMIT_MAX
+        value: "20"
+
+databases:
+  - name: pricehawk-db
+    plan: free
