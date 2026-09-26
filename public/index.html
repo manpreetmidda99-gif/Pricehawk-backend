@@ -383,11 +383,9 @@
         <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="window-title">Product search</span></div>
         <div class="product-content">
           <div class="search-tabs" role="tablist" aria-label="Search method">
-            <button class="search-tab" id="name-tab" type="button" role="tab" aria-selected="true" aria-controls="product-search" data-mode="name">Product name</button>
-            <button class="search-tab" id="link-tab" type="button" role="tab" aria-selected="false" aria-controls="product-search" data-mode="link">Product link</button>
-            <button class="search-tab" id="track-tab" type="button" role="tab" aria-selected="false" aria-controls="product-search" data-mode="track">Track prices</button>
+            <button class="search-tab" id="track-tab" type="button" role="tab" aria-selected="true" aria-controls="product-search" data-mode="track">Track prices</button>
           </div>
-          <form id="product-search" novalidate>
+          <form id="product-search" novalidate hidden>
             <label class="search-field" for="product-query">
               <span class="search-value">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -397,7 +395,8 @@
             </label>
           </form>
           <!-- Manual price tracker: user enters prices they see on retailer sites -->
-          <form id="price-tracker" novalidate hidden>
+          <form id="price-tracker" novalidate>
+            <p style="font-size:14px;color:var(--muted);margin:0 0 12px">Retailers block automatic price checks, so PriceHawk tracks prices you enter. Add a product below with the price you see — add it from each store to compare.</p>
             <div class="track-grid">
               <label class="track-field"><span>Product name</span><input id="track-name" type="text" autocomplete="off" placeholder="e.g. Sony WH-1000XM5" /></label>
               <label class="track-field"><span>Store</span><input id="track-store" type="text" autocomplete="off" placeholder="e.g. Best Buy" /></label>
@@ -594,7 +593,7 @@
       var resultSummary = document.getElementById('result-summary');
       var resultStatus = document.getElementById('result-status');
       var trackForm = document.getElementById('price-tracker');
-      var searchMode = 'name';
+      var searchMode = 'track';
 
       function setFeedback(message, state) {
         searchFeedback.textContent = message;
@@ -896,6 +895,12 @@
           btn.disabled = false; btn.textContent = 'Add price';
         }
       });
+
+      // Initialize in track mode: hide search UI, show tracker, load prices.
+      document.querySelector('.search-note').style.display = 'none';
+      resultTitle.textContent = 'Tracked prices';
+      resultSummary.textContent = 'Prices you entered across stores';
+      loadTracked();
     }());
   </script>
 </body>
