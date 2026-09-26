@@ -40,5 +40,24 @@ export async function ensureSchema(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_price_history_item
       ON price_history (item_id, checked_at DESC);
+    CREATE TABLE IF NOT EXISTS manual_products (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name TEXT NOT NULL,
+      target_price NUMERIC,
+      target_currency TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS manual_prices (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      product_id UUID NOT NULL REFERENCES manual_products(id) ON DELETE CASCADE,
+      store TEXT NOT NULL,
+      price NUMERIC NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      url TEXT,
+      notes TEXT,
+      recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_manual_prices_product
+      ON manual_prices (product_id, recorded_at DESC);
   `);
 }

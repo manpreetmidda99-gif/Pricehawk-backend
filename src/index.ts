@@ -20,6 +20,7 @@ import { compareRoute } from "./routes/compare.js";
 import { healthRoute } from "./routes/health.js";
 import { priceRoute } from "./routes/price.js";
 import { searchRoute } from "./routes/search.js";
+import { trackRoute } from "./routes/track.js";
 import { watchlistRoute } from "./routes/watchlist.js";
 
 const app = new Hono();
@@ -52,13 +53,13 @@ app.use(
   rateLimit({ windowMs: config.rateLimitWindowMs, max: config.rateLimitMax }),
 );
 
-// Shared-secret auth on /api/* — except the two public endpoints the
-// website calls directly from browsers (/api/search, /api/compare),
-// which rely on strict rate limits + caching instead of a key.
+// Shared-secret auth on /api/* — except the public endpoints the
+// website calls directly from browsers (/api/search, /api/compare,
+// /api/track), which rely on strict rate limits instead of a key.
 // /health stays public.
 app.use(
   "/api/*",
-  apiKeyAuth(config.apiKey, { publicPaths: ["/api/search", "/api/compare"] }),
+  apiKeyAuth(config.apiKey, { publicPaths: ["/api/search", "/api/compare", "/api/track"] }),
 );
 
 // Stricter limits on the expensive endpoints (retailer fetching).
@@ -74,6 +75,7 @@ app.route("/api/search", searchRoute(priceCache));
 app.route("/api/price", priceRoute(priceCache));
 app.route("/api/compare", compareRoute(priceCache));
 app.route("/api/watchlist", watchlistRoute(priceCache));
+app.route("/api/track", trackRoute());
 
 // Serve the PriceHawk website (same origin, so no mixed-content issues).
 const here = dirname(fileURLToPath(import.meta.url));

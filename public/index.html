@@ -145,6 +145,24 @@
     .search-action { flex: none; min-width: 76px; border: 0; border-radius: 7px; background: var(--accent); color: #fff; padding: 10px 15px; font-weight: 700; cursor: pointer; }
     .search-action:hover { background: var(--accent-deep); }
     .search-action:disabled { cursor: wait; opacity: .72; }
+    .track-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .track-field { display: grid; gap: 5px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .track-field input { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 15px; background: var(--surface); color: var(--ink); width: 100%; }
+    .track-field input:focus { outline: 3px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+    .track-submit { width: 100%; padding: 12px; font-size: 16px; }
+    .track-card { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); display: grid; gap: 10px; }
+    .track-card-head { display: flex; justify-content: space-between; align-items: start; gap: 10px; }
+    .track-card-head strong { font-size: 16px; }
+    .track-target-hit { background: var(--green-soft); color: var(--green); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+    .track-stores { display: grid; gap: 8px; }
+    .track-store-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); gap: 10px; }
+    .track-store-row.cheapest { background: var(--green-soft); border: 1px solid var(--green); }
+    .track-store-name { font-weight: 600; font-size: 14px; }
+    .track-store-price { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .track-store-link { font-size: 13px; color: var(--accent); text-decoration: none; }
+    .track-delete { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 4px; }
+    .track-delete:hover { color: var(--accent-deep); }
+    @media (max-width: 560px) { .track-grid { grid-template-columns: 1fr; } }
     .search-tab:focus-visible, .search-action:focus-visible, .search-value input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     .search-note { display: flex; align-items: center; gap: 7px; margin: 10px 2px 0; color: var(--muted); font-size: 11px; }
     .search-feedback { margin-top: 14px; padding: 11px 13px; border-radius: 8px; background: var(--accent-soft); color: var(--ink); font-size: 12px; }
@@ -367,6 +385,7 @@
           <div class="search-tabs" role="tablist" aria-label="Search method">
             <button class="search-tab" id="name-tab" type="button" role="tab" aria-selected="true" aria-controls="product-search" data-mode="name">Product name</button>
             <button class="search-tab" id="link-tab" type="button" role="tab" aria-selected="false" aria-controls="product-search" data-mode="link">Product link</button>
+            <button class="search-tab" id="track-tab" type="button" role="tab" aria-selected="false" aria-controls="product-search" data-mode="track">Track prices</button>
           </div>
           <form id="product-search" novalidate>
             <label class="search-field" for="product-query">
@@ -376,6 +395,17 @@
               </span>
               <button class="search-action" type="submit">Search</button>
             </label>
+          </form>
+          <!-- Manual price tracker: user enters prices they see on retailer sites -->
+          <form id="price-tracker" novalidate hidden>
+            <div class="track-grid">
+              <label class="track-field"><span>Product name</span><input id="track-name" type="text" autocomplete="off" placeholder="e.g. Sony WH-1000XM5" /></label>
+              <label class="track-field"><span>Store</span><input id="track-store" type="text" autocomplete="off" placeholder="e.g. Best Buy" /></label>
+              <label class="track-field"><span>Price</span><input id="track-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="299.99" /></label>
+              <label class="track-field"><span>Product URL (optional)</span><input id="track-url" type="url" autocomplete="off" placeholder="https://…" /></label>
+              <label class="track-field"><span>Target price (optional)</span><input id="track-target" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Alert me below…" /></label>
+            </div>
+            <button class="search-action track-submit" type="submit">Add price</button>
           </form>
           <div class="search-note">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -563,6 +593,7 @@
       var resultTitle = document.getElementById('result-title');
       var resultSummary = document.getElementById('result-summary');
       var resultStatus = document.getElementById('result-status');
+      var trackForm = document.getElementById('price-tracker');
       var searchMode = 'name';
 
       function setFeedback(message, state) {
@@ -699,12 +730,24 @@
           searchTabs.forEach(function (item) {
             item.setAttribute('aria-selected', String(item === tab));
           });
-          searchInput.value = '';
-          searchInput.type = searchMode === 'link' ? 'url' : 'search';
-          searchInput.placeholder = searchMode === 'link' ? 'Paste a retailer product URL' : 'Search by brand, model, or product';
-          searchInput.setAttribute('aria-label', searchMode === 'link' ? 'Retailer product link' : 'Product name');
-          searchFeedback.hidden = true;
-          searchInput.focus();
+          var isTrack = searchMode === 'track';
+          searchForm.hidden = isTrack;
+          trackForm.hidden = !isTrack;
+          document.querySelector('.search-note').style.display = isTrack ? 'none' : '';
+          if (isTrack) {
+            resultTitle.textContent = 'Tracked prices';
+            resultSummary.textContent = 'Prices you entered across stores';
+            resultStatus.textContent = 'Ready';
+            clearResults('');
+            loadTracked();
+          } else {
+            searchInput.value = '';
+            searchInput.type = searchMode === 'link' ? 'url' : 'search';
+            searchInput.placeholder = searchMode === 'link' ? 'Paste a retailer product URL' : 'Search by brand, model, or product';
+            searchInput.setAttribute('aria-label', searchMode === 'link' ? 'Retailer product link' : 'Product name');
+            searchFeedback.hidden = true;
+            searchInput.focus();
+          }
         });
       });
 
@@ -764,6 +807,93 @@
           searchButton.disabled = false;
           searchButton.textContent = 'Search';
           offerList.setAttribute('aria-busy', 'false');
+        }
+      });
+
+      /* ---- Manual price tracker ---- */
+      function fmtPrice(p, cur) {
+        try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur || 'USD' }).format(p); }
+        catch (e) { return (cur || 'USD') + ' ' + p; }
+      }
+      async function loadTracked() {
+        resultStatus.textContent = 'Loading';
+        try {
+          var res = await fetch(PRICEHAWK_API_BASE + '/api/track');
+          var data = await res.json();
+          renderTracked(data.products || []);
+          resultStatus.textContent = 'Ready';
+        } catch (e) {
+          setFeedback('Could not load tracked prices.', 'error');
+          resultStatus.textContent = 'Offline';
+        }
+      }
+      function renderTracked(products) {
+        unavailableBox.hidden = true;
+        if (!products.length) {
+          offerList.innerHTML = '<div class="offer-empty">No tracked prices yet. Add one above — enter the product, store, and price you see.</div>';
+          resultSummary.textContent = 'Add your first price above';
+          return;
+        }
+        resultSummary.textContent = products.length + ' product' + (products.length === 1 ? '' : 's') + ' tracked';
+        offerList.innerHTML = products.map(function (p) {
+          var stores = p.stores.map(function (s) {
+            var link = s.url ? ' <a class="track-store-link" href="' + s.url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener">Visit</a>' : '';
+            return '<div class="track-store-row' + (s.isCheapest ? ' cheapest' : '') + '">' +
+              '<span class="track-store-name">' + escapeHtml(s.store) + (s.isCheapest ? ' 🏆' : '') + link + '</span>' +
+              '<span class="track-store-price">' + fmtPrice(s.price, s.currency) + '</span></div>';
+          }).join('');
+          var hit = p.targetHit ? '<span class="track-target-hit">🎯 Target hit!</span>' : '';
+          var target = p.targetPrice ? '<div style="font-size:13px;color:var(--muted)">Target: ' + fmtPrice(p.targetPrice, p.targetCurrency) + '</div>' : '';
+          return '<div class="track-card"><div class="track-card-head"><div><strong>' + escapeHtml(p.name) + '</strong>' + target + '</div>' +
+            '<div style="display:flex;gap:8px;align-items:center">' + hit +
+            '<button class="track-delete" data-id="' + p.id + '">Remove</button></div></div>' +
+            '<div class="track-stores">' + stores + '</div></div>';
+        }).join('');
+        offerList.querySelectorAll('.track-delete').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            if (!confirm('Remove this product and all its prices?')) return;
+            await fetch(PRICEHAWK_API_BASE + '/api/track/' + btn.getAttribute('data-id'), { method: 'DELETE' });
+            loadTracked();
+          });
+        });
+      }
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (m) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+      }
+      trackForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        var name = document.getElementById('track-name').value.trim();
+        var store = document.getElementById('track-store').value.trim();
+        var price = parseFloat(document.getElementById('track-price').value);
+        var url = document.getElementById('track-url').value.trim();
+        var target = document.getElementById('track-target').value.trim();
+        if (!name || !store || !(price > 0)) {
+          setFeedback('Enter a product name, store, and price.', 'error');
+          return;
+        }
+        var btn = trackForm.querySelector('.track-submit');
+        btn.disabled = true; btn.textContent = 'Adding…';
+        try {
+          var res = await fetch(PRICEHAWK_API_BASE + '/api/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productName: name, store: store, price: price,
+              url: url || undefined, targetPrice: target ? parseFloat(target) : undefined
+            })
+          });
+          var data = await res.json();
+          if (!res.ok) throw new Error(data.error ? data.error.message : 'Could not save.');
+          trackForm.reset();
+          if (data.targetHit) setFeedback('🎯 Target price hit! ' + escapeHtml(data.productName) + ' at ' + escapeHtml(data.store) + ' is ' + fmtPrice(data.price, data.currency) + '.', 'info');
+          else setFeedback('Price added for ' + data.productName + '.', 'info');
+          loadTracked();
+        } catch (e) {
+          setFeedback(e.message || 'Could not save the price.', 'error');
+        } finally {
+          btn.disabled = false; btn.textContent = 'Add price';
         }
       });
     }());

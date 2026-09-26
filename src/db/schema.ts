@@ -24,5 +24,30 @@ export const priceHistory = pgTable("price_history", {
   checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Manual price tracking — user enters prices they see on store sites.
+// No auto-fetching; works regardless of retailer blocking.
+export const manualProducts = pgTable("manual_products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  targetPrice: numeric("target_price"),
+  targetCurrency: text("target_currency"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const manualPrices = pgTable("manual_prices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => manualProducts.id, { onDelete: "cascade" }),
+  store: text("store").notNull(),
+  price: numeric("price").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  url: text("url"),
+  notes: text("notes"),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type WatchlistItem = typeof watchlistItems.$inferSelect;
 export type PriceHistoryEntry = typeof priceHistory.$inferSelect;
+export type ManualProduct = typeof manualProducts.$inferSelect;
+export type ManualPrice = typeof manualPrices.$inferSelect;
