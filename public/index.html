@@ -17,6 +17,8 @@
   <meta name="twitter:title" content="PriceHawk — Stop overpaying. Find the lowest price, fast." />
   <meta name="twitter:description" content="Search any product once. Compare prices across stores, get the cheapest deal highlighted, and set free price-drop alerts." />
   <meta name="twitter:image" content="https://pricehawk-api.onrender.com/images/logo.webp" />
+  <!-- Google AdSense: replace ca-pub-XXXXXXXXXXXXXXXX with your publisher ID after approval -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,600&display=swap" rel="stylesheet" />
@@ -147,6 +149,16 @@
       background: var(--surface-2);
     }
     .popular-card span { font-weight: 700; font-size: 14px; }
+    .ad-slot {
+      max-width: 1100px;
+      margin: 8px auto;
+      padding: 0 20px;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ad-slot ins { width: 100%; }
     .apikey-banner {
       display: flex;
       gap: 14px;
@@ -622,6 +634,16 @@
       </div>
     </div>
 
+    <div class="ad-slot" aria-hidden="true">
+      <!-- AdSense: paste your ad unit code inside this div after approval -->
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+           data-ad-slot="1111111111"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
+
     <section class="wrap" id="popular" style="padding-top:48px;padding-bottom:24px">
       <div class="section-heading" style="margin-bottom:24px">
         <p class="eyebrow">Trending now</p>
@@ -758,6 +780,16 @@
       </div>
     </section>
 
+    <div class="ad-slot" aria-hidden="true">
+      <!-- AdSense: paste your ad unit code inside this div after approval -->
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+           data-ad-slot="2222222222"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
+
     <section class="wrap final">
       <div class="final-inner">
         <h2>Your next best price should find you.</h2>
@@ -773,9 +805,23 @@
 
   <footer class="wrap">
     <span style="display:inline-flex;align-items:center;gap:8px"><img src="images/logo.webp" alt="" style="width:24px;height:24px;border-radius:6px" />© 2026 PriceHawk</span>
-    <nav aria-label="Footer navigation"><a href="#how">How it works</a><a href="#features">Features</a><a href="#faq">FAQ</a></nav>
+    <nav aria-label="Footer navigation"><a href="#how">How it works</a><a href="#features">Features</a><a href="#faq">FAQ</a><a href="#privacy">Privacy</a></nav>
   </footer>
   <p class="wrap" style="font-size:12px;color:var(--muted);padding-bottom:24px;margin-top:-8px">As an Amazon Associate, PriceHawk earns from qualifying purchases made through links on this site — at no extra cost to you.</p>
+
+  <section class="wrap" id="privacy" style="padding-top:24px;padding-bottom:48px;max-width:760px">
+    <h2 style="font-size:22px;margin:0 0 12px">Privacy Policy</h2>
+    <div style="font-size:14px;color:var(--muted);display:grid;gap:12px;line-height:1.6">
+      <p style="margin:0"><strong>What we collect.</strong> If you create an account, we store your email address and a securely hashed password. If you save price alerts, we store the product name, target price, and alert preferences tied to your account.</p>
+      <p style="margin:0"><strong>API keys.</strong> Any SerpAPI key you enter is stored only in your browser's local storage. It is sent with your own searches and is never stored on our servers.</p>
+      <p style="margin:0"><strong>Cookies.</strong> We use a single session cookie to keep you logged in. We do not use tracking cookies.</p>
+      <p style="margin:0"><strong>Advertising.</strong> We may display ads served by Google AdSense. Google may use cookies to serve ads based on your visits to this and other sites. You can opt out of personalized advertising at <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener" style="color:var(--accent)">google.com/settings/ads</a>.</p>
+      <p style="margin:0"><strong>Affiliate links.</strong> Some retailer links contain affiliate tags. If you buy through them, the retailer may pay us a commission at no extra cost to you.</p>
+      <p style="margin:0"><strong>Data sharing.</strong> We do not sell your personal data. Account data is used only to operate price alerts and is never shared with advertisers.</p>
+      <p style="margin:0"><strong>Contact.</strong> For privacy questions or to delete your account data, contact us through the site.</p>
+      <p style="margin:0;font-size:12px">Last updated: September 2026.</p>
+    </div>
+  </section>
 
   <script>
     (function () {
@@ -1422,6 +1468,13 @@
       var serpNote = document.getElementById('serpapi-note');
       if (serpNote) serpNote.style.display = getSerpApiKey() ? 'none' : '';
     }());
+  </script>
+  <script>
+    // Initialize AdSense ad units (no-ops until a real publisher ID is set)
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) { /* AdSense not configured yet */ }
   </script>
 </body>
 </html>
