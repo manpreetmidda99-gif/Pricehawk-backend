@@ -765,6 +765,7 @@
     <span style="display:inline-flex;align-items:center;gap:8px"><img src="images/logo.webp" alt="" style="width:24px;height:24px;border-radius:6px" />© 2026 PriceHawk</span>
     <nav aria-label="Footer navigation"><a href="#how">How it works</a><a href="#features">Features</a><a href="#faq">FAQ</a></nav>
   </footer>
+  <p class="wrap" style="font-size:12px;color:var(--muted);padding-bottom:24px;margin-top:-8px">As an Amazon Associate, PriceHawk earns from qualifying purchases made through links on this site — at no extra cost to you.</p>
 
   <script>
     (function () {
@@ -846,7 +847,12 @@
       function safeRetailerUrl(value) {
         try {
           var parsed = new URL(value);
-          return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '';
+          if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+          // Amazon affiliate tag — earns commission at no extra cost to the buyer
+          if (/\.amazon\./i.test(parsed.hostname)) {
+            parsed.searchParams.set('tag', 'manpreetmidda-20');
+          }
+          return parsed.href;
         } catch (error) {
           return '';
         }
